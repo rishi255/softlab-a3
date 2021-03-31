@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
+		/>
+		<title>Push!</title>
+		<link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css" />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,300italic,400italic,700italic"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://use.fontawesome.com/releases/v5.15.3/css/all.css"
+		/>
+		<link rel="stylesheet" href="assets/css/styles.min.css" />
+		<script src="https://js.pusher.com/beams/1.0/push-notifications-cdn.js"></script>
+
+		<!-- Push notifications JS -->
+		<script src="https://js.pusher.com/beams/1.0/push-notifications-cdn.js"></script>
+		<script>
+			function uuidv4() {
+				return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+					/[xy]/g,
+					function (c) {
+						var r = (Math.random() * 16) | 0,
+							v = c == "x" ? r : (r & 0x3) | 0x8;
+						return v.toString(16);
+					}
+				);
+			}
+
+			let tokenProvider = new PusherPushNotifications.TokenProvider({
+				url: "http://localhost:3000/pusher/beams-auth",
+			});
+
+			const beamsClient = new PusherPushNotifications.Client({
+				instanceId: "beb6f539-ed11-4a61-a2ea-845292c64db1",
+			});
+
+			beamsClient
+				.start()
+				.then((beamsClient) => beamsClient.getDeviceId())
+				.then((deviceId) =>
+					console.log(
+						"Successfully registered with Beams. Device ID:",
+						deviceId
+					)
+				)
+				.then(() => beamsClient.getDeviceInterests())
+				.then((deviceInterests) => {
+					console.log("Current interests:", deviceInterests);
+				})
+				.then(() => {
+					let x = uuidv4();
+					beamsClient.setUserId(x, tokenProvider);
+					return x;
+				})
+				.then((x) => console.log("User ID: ", x))
+				.catch(console.error);
+
+			function addInterest() {
+				beamsClient.addDeviceInterest(
+					document.subscription_form.interest.value
+				);
+				console.log("Interest " + interest.value + " added!");
+			}
+		</script>
+	</head>
+	<body id="page-top">
+		<nav class="navbar navbar-light navbar-expand" id="sidebar-wrapper">
+			<div class="container">
+				<button
+					data-toggle="collapse"
+					class="navbar-toggler d-none"
+					data-target="#"
+				></button>
+				<div class="collapse navbar-collapse">
+					<ul class="navbar-nav sidebar-nav" id="sidebar-nav">
+						<li class="nav-item sidebar-brand">
+							<a
+								class="nav-link active js-scroll-trigger"
+								href="#page-top"
+								>Brand</a
+							>
+						</li>
+						<li class="nav-item sidebar-nav-item">
+							<a
+								class="nav-link js-scroll-trigger"
+								href="#page-top"
+								>Home</a
+							>
+						</li>
+						<li class="nav-item sidebar-nav-item">
+							<a class="nav-link js-scroll-trigger" href="#about"
+								>About</a
+							>
+						</li>
+						<li class="nav-item sidebar-nav-item">
+							<a
+								class="nav-link js-scroll-trigger"
+								href="#services"
+								>Services</a
+							>
+						</li>
+						<li class="nav-item sidebar-nav-item">
+							<a
+								class="nav-link js-scroll-trigger"
+								href="#portfolio"
+								>Portfolio</a
+							>
+						</li>
+						<li class="nav-item sidebar-nav-item">
+							<a
+								class="nav-link js-scroll-trigger"
+								href="#contact"
+								>Contact</a
+							>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+		<header
+			class="d-flex masthead"
+			style="background-image: url('assets/img/bg-callout.jpg')"
+		>
+			<div class="container text-center my-auto">
+				<h1 class="mb-1" style="margin: -50px 0px 4px">
+					Push Notifications!
+				</h1>
+				<h3 class="mb-5"><em>Featuring three different APIs!</em></h3>
+				<form name="subscription_form" onsubmit="addInterest()">
+					<select
+						class="custom-select"
+						id="interest"
+						name="interest"
+						style="width: 500px; margin: 10px; height: 69px"
+					>
+						<option value="" selected="" disabled="">
+							Choose a subscription!
+						</option>
+						<option value="cats" class="icon cat">
+							Random cat facts
+						</option>
+						<option value="jokes">Random jokes</option>
+					</select>
+					<button
+						type="submit"
+						class="btn btn-primary btn-xl js-scroll-trigger"
+						role="button"
+						style="height: 69px"
+					>
+						Subscribe!
+					</button>
+				</form>
+				<button
+					class="btn btn-primary btn-block text-center d-xl-flex justify-content-center align-items-center mx-auto justify-content-xl-center align-items-xl-center"
+					type="submit"
+					onclick="window.location.replace('/publish');"
+					style="height: 50px; width: 300px; margin: 20px"
+				>
+					Submit!
+				</button>
+				<div class="overlay"></div>
+			</div>
+		</header>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.bundle.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
+		<script src="assets/js/script.min.js"></script>
+	</body>
+</html>

@@ -1,2 +1,7 @@
-/.vscode
-/__pycache__
+__pycache__
+node_modules/
+npm-debug.log
+.DS_Store
+.vscode
+app.py
+*.env
