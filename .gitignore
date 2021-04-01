@@ -5,4 +5,3 @@ npm-debug.log
 .vscode
 app.py
 *.env
-package-lock.json

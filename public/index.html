@@ -6,6 +6,25 @@
 			name="viewport"
 			content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
 		/>
+
+		<div
+			class="alert alert-dark alert-dismissible fade show"
+			role="alert"
+			style="margin: 0"
+		>
+			Welcome! Click here to enable push notifications on your browser.
+			<a
+				href="#"
+				role="button"
+				onclick="enableNotifications(); return false;"
+				class="btn btn-dark btn-sm"
+			>
+				Enable Notifications
+			</a>
+			<button class="close" aria-label="Close" data-dismiss="alert">
+				<span aria-hidden="true">&times;</span>
+			</button>
+		</div>
 		<title>Push!</title>
 		<link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css" />
 		<link
@@ -33,34 +52,47 @@
 				);
 			}
 
+			// alert(new URL("/pusher/beams-auth", document.location).href);
 			let tokenProvider = new PusherPushNotifications.TokenProvider({
-				url: "http://localhost:3000/pusher/beams-auth",
+				url: new URL("/pusher/beams-auth", document.location).href,
+				// "https://softlab-a3.herokuapp.com/pusher/beams-auth",
 			});
 
 			const beamsClient = new PusherPushNotifications.Client({
-				instanceId: "beb6f539-ed11-4a61-a2ea-845292c64db1",
+				instanceId: "db211b1a-a776-4dc3-83f1-37b8baad8a3a",
 			});
 
-			beamsClient
-				.start()
-				.then((beamsClient) => beamsClient.getDeviceId())
-				.then((deviceId) =>
-					console.log(
-						"Successfully registered with Beams. Device ID:",
-						deviceId
+			function enableNotifications() {
+				beamsClient.start();
+				beamsClient
+					.start()
+					.then((beamsClient) => beamsClient.getDeviceId())
+					.then((deviceId) =>
+						console.log(
+							"Successfully registered with Beams. Device ID:",
+							deviceId
+						)
 					)
-				)
-				.then(() => beamsClient.getDeviceInterests())
-				.then((deviceInterests) => {
-					console.log("Current interests:", deviceInterests);
-				})
-				.then(() => {
-					let x = uuidv4();
-					beamsClient.setUserId(x, tokenProvider);
-					return x;
-				})
-				.then((x) => console.log("User ID: ", x))
-				.catch(console.error);
+					.then(() => beamsClient.getDeviceInterests())
+					.then((deviceInterests) => {
+						console.log("Current interests:", deviceInterests);
+					})
+					.then(() => {
+						beamsClient.getUserId().then((userId) => {
+							if (userId === null) {
+								// set userId IF NOT SET
+								console.log(
+									"userId was not already set! Generating now."
+								);
+								let x = uuidv4();
+								beamsClient.setUserId(x, tokenProvider);
+								userId = x;
+							}
+							console.log("User ID: ", userId);
+						});
+					})
+					.catch((e) => console.log(e));
+			}
 
 			function addInterest() {
 				beamsClient.addDeviceInterest(
@@ -71,59 +103,6 @@
 		</script>
 	</head>
 	<body id="page-top">
-		<nav class="navbar navbar-light navbar-expand" id="sidebar-wrapper">
-			<div class="container">
-				<button
-					data-toggle="collapse"
-					class="navbar-toggler d-none"
-					data-target="#"
-				></button>
-				<div class="collapse navbar-collapse">
-					<ul class="navbar-nav sidebar-nav" id="sidebar-nav">
-						<li class="nav-item sidebar-brand">
-							<a
-								class="nav-link active js-scroll-trigger"
-								href="#page-top"
-								>Brand</a
-							>
-						</li>
-						<li class="nav-item sidebar-nav-item">
-							<a
-								class="nav-link js-scroll-trigger"
-								href="#page-top"
-								>Home</a
-							>
-						</li>
-						<li class="nav-item sidebar-nav-item">
-							<a class="nav-link js-scroll-trigger" href="#about"
-								>About</a
-							>
-						</li>
-						<li class="nav-item sidebar-nav-item">
-							<a
-								class="nav-link js-scroll-trigger"
-								href="#services"
-								>Services</a
-							>
-						</li>
-						<li class="nav-item sidebar-nav-item">
-							<a
-								class="nav-link js-scroll-trigger"
-								href="#portfolio"
-								>Portfolio</a
-							>
-						</li>
-						<li class="nav-item sidebar-nav-item">
-							<a
-								class="nav-link js-scroll-trigger"
-								href="#contact"
-								>Contact</a
-							>
-						</li>
-					</ul>
-				</div>
-			</div>
-		</nav>
 		<header
 			class="d-flex masthead"
 			style="background-image: url('assets/img/bg-callout.jpg')"
@@ -160,12 +139,16 @@
 				<button
 					class="btn btn-primary btn-block text-center d-xl-flex justify-content-center align-items-center mx-auto justify-content-xl-center align-items-xl-center"
 					type="submit"
-					onclick="window.location.replace('/publish');"
+					onclick="window.location.href = '/publish'; return false;"
 					style="height: 50px; width: 300px; margin: 20px"
 				>
-					Submit!
+					Publish Notifications!
 				</button>
-				<div class="overlay"></div>
+				<button
+					onclick="beamsClient.stop(); console.log('Cleared state!');"
+				>
+					Stop Client
+				</button>
 			</div>
 		</header>
 

@@ -1,3 +1,4 @@
+const axios = require("axios");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const express = require("express");
@@ -22,40 +23,27 @@ app.get("/pusher/beams-auth", function (req, res) {
 	res.send(JSON.stringify(beamsToken));
 });
 
-function getCatFact(callback) {
-	const Http = new XMLHttpRequest();
-	Http.open(
-		"GET",
+async function getCatFact() {
+	let res = await axios.get(
 		"https://cat-fact.herokuapp.com/facts/random?animal_type=cat"
 	);
-	Http.send();
-
-	Http.onreadystatechange = function () {
-		if (this.readyState == 4 && this.status == 200) {
-			// return JSON.parse(Http.responseText).text;
-			callback(JSON.parse(Http.responseText).text);
-		}
-	};
+	console.log(res.data);
+	// console.log("Cat fact done: " + res.data.text);
+	return res.data.text;
 }
 
-function getJoke(callback) {
-	const Http = new XMLHttpRequest();
-	Http.open("GET", "https://official-joke-api.appspot.com/random_joke");
-	Http.send();
-
-	Http.onreadystatechange = function () {
-		if (this.readyState == 4 && this.status == 200) {
-			let x = JSON.parse(Http.responseText);
-			y = x.setup + "\n" + x.punchline;
-			// console.log(y);
-			callback(y);
-		}
-	};
+async function getJoke() {
+	let res = await axios.get(
+		"https://official-joke-api.appspot.com/random_joke"
+	);
+	let x = res.data;
+	y = x.setup + "\n" + x.punchline;
+	// console.log("Joke done: " + y);
+	return y;
 }
 
 app.get("/publish", function (req, res) {
-	getCatFact((cat_fact) => {
-		console.log("CAT FACT: " + cat_fact);
+	getCatFact().then((cat_fact) => {
 		beamsClient
 			.publishToInterests(["cats"], {
 				web: {
@@ -65,26 +53,26 @@ app.get("/publish", function (req, res) {
 					},
 				},
 			})
-			.then(
-				getJoke((joke) => {
-					console.log("JOKE: " + joke);
-					beamsClient
-						.publishToInterests(["jokes"], {
-							web: {
-								notification: {
-									title: "Random Joke",
-									body: joke,
-								},
-							},
-						})
-						.catch((e) =>
-							res.status(500).send("Internal error:", e)
-						);
-				})
-			)
-			.then(res.redirect("/"))
+			.then(console.log("PUBLISHED CAT FACT: " + cat_fact))
 			.catch((e) => res.status(500).send("Internal error:", e));
 	});
+	getJoke()
+		.then((joke) => {
+			beamsClient
+				.publishToInterests(["jokes"], {
+					web: {
+						notification: {
+							title: "Random Joke",
+							body: joke,
+						},
+					},
+				})
+				.then(console.log("PUBLISHED JOKE: " + joke))
+				.catch((e) => res.status(500).send("Internal error:", e));
+		})
+		.then(console.log("All published!"))
+		.then(res.redirect("/"))
+		.catch((e) => res.status(500).send("Internal error:", e));
 });
 
 app.listen(process.env.PORT || port, () =>
