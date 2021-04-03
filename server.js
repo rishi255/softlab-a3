@@ -118,8 +118,6 @@ app.get("/publish_user", function (req, res) {
 			.then(res.redirect("/"))
 			.catch((e) => res.status(500).send("Internal error:", e));
 	}
-
-	res.send("published!");
 });
 
 app.listen(process.env.PORT || port, () =>
