@@ -3,7 +3,6 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const express = require("express");
 const PushNotifications = require("@pusher/push-notifications-server");
-const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 const app = express();
 const port = 5500;

@@ -11,6 +11,7 @@
 			class="alert alert-dark alert-dismissible fade show"
 			role="alert"
 			style="margin: 0"
+			id="enable_notifs_alert"
 		>
 			Welcome! Click here to enable push notifications on your browser.
 			<a
@@ -36,23 +37,50 @@
 			href="https://use.fontawesome.com/releases/v5.15.3/css/all.css"
 		/>
 		<link rel="stylesheet" href="assets/css/styles.min.css" />
-		<script src="https://js.pusher.com/beams/1.0/push-notifications-cdn.js"></script>
+		<link rel="stylesheet" href="assets/css/jquery.toast.min.css" />
 
+		<!-- Toast JS -->
+		<script type="module" src="assets/js/jquery.toast.min.js"></script>
 		<!-- Push notifications JS -->
 		<script src="https://js.pusher.com/beams/1.0/push-notifications-cdn.js"></script>
 		<script>
-			function uuidv4() {
-				return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-					/[xy]/g,
-					function (c) {
-						var r = (Math.random() * 16) | 0,
-							v = c == "x" ? r : (r & 0x3) | 0x8;
-						return v.toString(16);
-					}
-				);
+			window.onload = function onload_stuff() {
+				// $.toast("Onload toast!");
+				if (sessionStorage.getItem("clientStarted") === "true")
+					dismissNotif();
+				initFingerprintJS();
+			};
+
+			function dismissNotif() {
+				$("#enable_notifs_alert").alert("close");
+				$("#enable_notifs_alert").on("closed.bs.alert", function () {
+					$.toast({
+						heading: "Notifications enabled!",
+						text: "Now you can subscribe and publish to something!",
+						showHideTransition: "slide",
+						icon: "info",
+						hideAfter: false,
+						position: "bottom-center",
+						bgColor: "gray",
+					});
+				});
 			}
 
-			// alert(new URL("/pusher/beams-auth", document.location).href);
+			function initFingerprintJS() {
+				FingerprintJS.load().then((fp) => {
+					// The FingerprintJS agent is ready.
+					// Get a visitor identifier when you'd like to.
+					fp.get().then((result) => {
+						// This is the visitor identifier:
+						window.visitorId = result.visitorId;
+						console.log(
+							"(initFingerprintJS): visitorId = " +
+								window.visitorId
+						);
+					});
+				});
+			}
+
 			let tokenProvider = new PusherPushNotifications.TokenProvider({
 				url: new URL("/pusher/beams-auth", document.location).href,
 				// "https://softlab-a3.herokuapp.com/pusher/beams-auth",
@@ -63,16 +91,14 @@
 			});
 
 			function enableNotifications() {
-				beamsClient.start();
 				beamsClient
 					.start()
-					.then((beamsClient) => beamsClient.getDeviceId())
-					.then((deviceId) =>
-						console.log(
-							"Successfully registered with Beams. Device ID:",
-							deviceId
-						)
-					)
+					// .then(
+					// 	console.log(
+					// 		"Successfully registered with Beams. Visitor ID:",
+					// 		window.visitorId
+					// 	)
+					// )
 					.then(() => beamsClient.getDeviceInterests())
 					.then((deviceInterests) => {
 						console.log("Current interests:", deviceInterests);
@@ -82,23 +108,41 @@
 							if (userId === null) {
 								// set userId IF NOT SET
 								console.log(
-									"userId was not already set! Generating now."
+									"userId was not already set! Setting it to visitorId."
 								);
-								let x = uuidv4();
-								beamsClient.setUserId(x, tokenProvider);
-								userId = x;
 							}
-							console.log("User ID: ", userId);
+							userId = window.visitorId;
+							beamsClient.setUserId(userId, tokenProvider);
+							console.log("userId: " + userId);
 						});
 					})
-					.catch((e) => console.log(e));
+					.then(() => {
+						sessionStorage.setItem("clientStarted", "true");
+						dismissNotif();
+					})
+					.catch((e) => console.error(e));
+			}
+
+			function clearState() {
+				beamsClient.stop().then(() => {
+					sessionStorage.setItem("clientStarted", "false");
+					console.log("Cleared state!");
+				});
 			}
 
 			function addInterest() {
-				beamsClient.addDeviceInterest(
-					document.subscription_form.interest.value
-				);
-				console.log("Interest " + interest.value + " added!");
+				if (sessionStorage.getItem("clientStarted") === "true") {
+					if (interest.value !== "") {
+						beamsClient.addDeviceInterest(interest.value);
+						console.log("Interest " + interest.value + " added!");
+					} else {
+						window.alert("Select a valid interest!");
+					}
+				} else {
+					window.alert(
+						"Can't add interest! Please enable notifications first."
+					);
+				}
 			}
 		</script>
 	</head>
@@ -136,22 +180,29 @@
 						Subscribe!
 					</button>
 				</form>
-				<button
-					class="btn btn-primary btn-block text-center d-xl-flex justify-content-center align-items-center mx-auto justify-content-xl-center align-items-xl-center"
-					type="submit"
-					onclick="window.location.href = '/publish'; return false;"
-					style="height: 50px; width: 300px; margin: 20px"
-				>
-					Publish Notifications!
-				</button>
-				<button
-					onclick="beamsClient.stop(); console.log('Cleared state!');"
-				>
-					Stop Client
-				</button>
+				<div class="btn-group">
+					<button
+						class="btn btn-primary text-center d-xl-flex justify-content-center align-items-center mx-auto justify-content-xl-center align-items-xl-center"
+						type="submit"
+						onclick="window.location.href = '/publish'; return false;"
+						style="height: 50px; width: 300px; margin: 20px"
+					>
+						Publish Notifications!
+					</button>
+					<button
+						class="btn btn-outline-dark text-center"
+						style="height: 50px; width: 120px; margin: 20px"
+						onclick="clearState(); console.log('Cleared state!');"
+					>
+						Stop Client
+					</button>
+				</div>
 			</div>
 		</header>
-
+		<script
+			async
+			src="//cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"
+		></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.bundle.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
