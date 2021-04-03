@@ -46,10 +46,27 @@
 		<script>
 			window.onload = function onload_stuff() {
 				// $.toast("Onload toast!");
-				if (sessionStorage.getItem("clientStarted") === "true")
-					dismissNotif();
-				initFingerprintJS();
+				beamsClient
+					.getRegistrationState()
+					.then((state) => {
+						if (
+							state ===
+							states.PERMISSION_GRANTED_REGISTERED_WITH_BEAMS
+						)
+							dismissNotif();
+						initFingerprintJS();
+					})
+					.catch(console.error);
 			};
+
+			// window.addEventListener("beforeunload", function (e) {
+			// 	e.preventDefault();
+			// 	console.log("BEFORE UNLOAD");
+			// 	window.confirm("On unload!");
+			// 	// the absence of a returnValue property on the event will guarantee the browser unload happens
+			// 	e.returnValue = "";
+			// 	return "SOMEEHETHIT";
+			// });
 
 			function dismissNotif() {
 				$("#enable_notifs_alert").alert("close");
@@ -81,7 +98,7 @@
 				});
 			}
 
-			let tokenProvider = new PusherPushNotifications.TokenProvider({
+			const tokenProvider = new PusherPushNotifications.TokenProvider({
 				url: new URL("/pusher/beams-auth", document.location).href,
 				// "https://softlab-a3.herokuapp.com/pusher/beams-auth",
 			});
@@ -90,19 +107,35 @@
 				instanceId: "db211b1a-a776-4dc3-83f1-37b8baad8a3a",
 			});
 
+			const states = PusherPushNotifications.RegistrationState;
+
+			function publishNotifications() {
+				beamsClient.getRegistrationState().then((state) => {
+					beamsClient.getUserId().then((userId) => {
+						if (
+							state ===
+							states.PERMISSION_GRANTED_REGISTERED_WITH_BEAMS
+						) {
+							beamsClient
+								.getDeviceInterests()
+								.then((interests) => {
+									fetch(
+										"/publish_user?userId=" +
+											userId +
+											"&deviceInterests=" +
+											JSON.stringify(interests)
+									).then((res) => console.log(res));
+								});
+						} else {
+							window.alert("Please enable notifications first!");
+						}
+					});
+				});
+			}
+
 			function enableNotifications() {
 				beamsClient
 					.start()
-					// .then(
-					// 	console.log(
-					// 		"Successfully registered with Beams. Visitor ID:",
-					// 		window.visitorId
-					// 	)
-					// )
-					.then(() => beamsClient.getDeviceInterests())
-					.then((deviceInterests) => {
-						console.log("Current interests:", deviceInterests);
-					})
 					.then(() => {
 						beamsClient.getUserId().then((userId) => {
 							if (userId === null) {
@@ -116,8 +149,9 @@
 							console.log("userId: " + userId);
 						});
 					})
-					.then(() => {
-						sessionStorage.setItem("clientStarted", "true");
+					.then(() => beamsClient.getDeviceInterests())
+					.then((deviceInterests) => {
+						console.log("Current interests:", deviceInterests);
 						dismissNotif();
 					})
 					.catch((e) => console.error(e));
@@ -125,24 +159,34 @@
 
 			function clearState() {
 				beamsClient.stop().then(() => {
-					sessionStorage.setItem("clientStarted", "false");
 					console.log("Cleared state!");
 				});
 			}
 
 			function addInterest() {
-				if (sessionStorage.getItem("clientStarted") === "true") {
-					if (interest.value !== "") {
-						beamsClient.addDeviceInterest(interest.value);
-						console.log("Interest " + interest.value + " added!");
+				console.log("In addInterest, STATES:");
+				console.log(states);
+				beamsClient.getRegistrationState().then((state) => {
+					if (
+						state ===
+						states.PERMISSION_GRANTED_REGISTERED_WITH_BEAMS
+					) {
+						console.log("Here before interest.value checking");
+						if (interest.value !== "") {
+							beamsClient.addDeviceInterest(interest.value);
+							console.log(
+								"Interest " + interest.value + " added!"
+							);
+						} else {
+							window.alert("Select a valid interest!");
+						}
+						console.log("Here bro!");
 					} else {
-						window.alert("Select a valid interest!");
+						window.alert(
+							"Can't add interest! Please enable notifications first."
+						);
 					}
-				} else {
-					window.alert(
-						"Can't add interest! Please enable notifications first."
-					);
-				}
+				});
 			}
 		</script>
 	</head>
@@ -184,7 +228,7 @@
 					<button
 						class="btn btn-primary text-center d-xl-flex justify-content-center align-items-center mx-auto justify-content-xl-center align-items-xl-center"
 						type="submit"
-						onclick="window.location.href = '/publish'; return false;"
+						onclick="publishNotifications(); return false;"
 						style="height: 50px; width: 300px; margin: 20px"
 					>
 						Publish Notifications!
@@ -192,7 +236,7 @@
 					<button
 						class="btn btn-outline-dark text-center"
 						style="height: 50px; width: 120px; margin: 20px"
-						onclick="clearState(); console.log('Cleared state!');"
+						onclick="clearState(); return false;"
 					>
 						Stop Client
 					</button>

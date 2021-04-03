@@ -41,37 +41,85 @@ async function getJoke() {
 	return y;
 }
 
+//! THIS FUNCTION IS OBSOLETE FOR MOST PURPOSES NOW.
 app.get("/publish", function (req, res) {
-	getCatFact().then((cat_fact) => {
-		beamsClient
-			.publishToInterests(["cats"], {
-				web: {
-					notification: {
-						title: "Random Cat Fact",
-						body: cat_fact,
-					},
-				},
-			})
-			.then(console.log("PUBLISHED CAT FACT: " + cat_fact))
-			.catch((e) => res.status(500).send("Internal error:", e));
-	});
-	getJoke()
-		.then((joke) => {
+	// 	getCatFact().then((cat_fact) => {
+	// 		beamsClient
+	// 			.publishToInterests(["cats"], {
+	// 				web: {
+	// 					notification: {
+	// 						title: "Random Cat Fact",
+	// 						body: cat_fact,
+	// 					},
+	// 				},
+	// 			})
+	// 			.then(console.log("PUBLISHED CAT FACT: " + cat_fact))
+	// 			.catch((e) => res.status(500).send("Internal error:", e));
+	// 	});
+	// 	getJoke()
+	// 		.then((joke) => {
+	// 			beamsClient
+	// 				.publishToInterests(["jokes"], {
+	// 					web: {
+	// 						notification: {
+	// 							title: "Random Joke",
+	// 							body: joke,
+	// 						},
+	// 					},
+	// 				})
+	// 				.then(console.log("PUBLISHED JOKE: " + joke))
+	// 				.catch((e) => res.status(500).send("Internal error:", e));
+	// 		})
+	// 		.then(console.log("All published!"))
+	// 		.then(res.redirect("/"))
+	// 		.catch((e) => res.status(500).send("Internal error:", e));
+});
+
+app.get("/publish_user", function (req, res) {
+	let userId = req.query["userId"];
+	let interests = req.query["deviceInterests"];
+	console.log("UserId FROM SERVER.js = " + userId);
+	console.log("Interests: " + interests);
+
+	if (interests.indexOf("cats") !== -1) {
+		// publish cat fact to this user.
+		getCatFact().then((cat_fact) => {
 			beamsClient
-				.publishToInterests(["jokes"], {
+				.publishToUsers([userId], {
 					web: {
 						notification: {
-							title: "Random Joke",
-							body: joke,
+							title: "Random Cat Fact",
+							body: cat_fact,
 						},
 					},
 				})
-				.then(console.log("PUBLISHED JOKE: " + joke))
+				.then((pubres) => console.log("Publish ID:" + pubres.publishId))
+				.then(console.log("PUBLISHED CAT FACT: " + cat_fact))
 				.catch((e) => res.status(500).send("Internal error:", e));
-		})
-		.then(console.log("All published!"))
-		.then(res.redirect("/"))
-		.catch((e) => res.status(500).send("Internal error:", e));
+		});
+	}
+
+	if (interests.indexOf("jokes") !== -1) {
+		getJoke()
+			.then((joke) => {
+				beamsClient
+					.publishToUsers([userId], {
+						web: {
+							notification: {
+								title: "Random Joke",
+								body: joke,
+							},
+						},
+					})
+					.then(console.log("PUBLISHED JOKE: " + joke))
+					.catch((e) => res.status(500).send("Internal error:", e));
+			})
+			.then(console.log("All published!"))
+			.then(res.redirect("/"))
+			.catch((e) => res.status(500).send("Internal error:", e));
+	}
+
+	res.send("published!");
 });
 
 app.listen(process.env.PORT || port, () =>
