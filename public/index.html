@@ -60,12 +60,8 @@
 			};
 
 			// window.addEventListener("beforeunload", function (e) {
-			// 	e.preventDefault();
-			// 	console.log("BEFORE UNLOAD");
-			// 	window.confirm("On unload!");
-			// 	// the absence of a returnValue property on the event will guarantee the browser unload happens
-			// 	e.returnValue = "";
-			// 	return "SOMEEHETHIT";
+			// 	console.log("In beforeunload listener!");
+			// 	return (e.returnValue = "Leaving website! Bye");
 			// });
 
 			function dismissNotif() {
